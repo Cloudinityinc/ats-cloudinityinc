@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { IoSearch } from "react-icons/io5";
+import axios from "axios";
 
 const UsersPage = () => {
   const [data, setData] = useState([]);
@@ -59,27 +60,14 @@ const UsersPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("Fetching data...");
-        console.log("URL: ", process.env.REACT_APP_FETCH_DATA);
         const response = await fetch(process.env.REACT_APP_FETCH_DATA);
-
-        console.log("Response:", response);
         if (!response.ok) {
           throw new Error("Data could not be fetched!");
         }
-        console.log("Response OK");
-        const result = await response.json(); // This is the outer JSON object
-        console.log("Result Fetched:", result);
+        const result = await response.json();
         if (result.body) {
-          const actualData = JSON.parse(result.body); // Parse the stringified JSON array
-          console.log("Parsed Data Array:", actualData);
-          if (Array.isArray(actualData)) {
-            setData(actualData);
-          } else {
-            console.error("Parsed data is not an array:", actualData);
-          }
-        } else {
-          console.error("Response JSON does not contain 'body':", result);
+          const actualData = JSON.parse(result.body);
+          setData(actualData);
         }
       } catch (error) {
         console.error("Error fetching data: ", error);
@@ -88,6 +76,47 @@ const UsersPage = () => {
 
     fetchData();
   }, []);
+
+  const downloadFile = async (ResumeFileName) => {
+    try {
+      // Construct the URL with the base URL from the environment variable
+      const apiUrl = `${
+        process.env.REACT_APP_RESUME_DOWNLOAD
+      }?guide=${encodeURIComponent(ResumeFileName)}`;
+
+      // Fetch the presigned URL from your Lambda function
+      const response = await axios.get(apiUrl);
+      if (response.status !== 200) {
+        throw new Error(
+          `Failed to fetch presigned URL: ${response.statusText}`
+        );
+      }
+      const presignedUrl = response.data;
+
+      // Using the presigned URL to initiate the download
+      const result = await axios.get(presignedUrl, {
+        responseType: "blob", // This ensures that the response is handled as a file
+      });
+      if (result.status !== 200) {
+        throw new Error(`Failed to download file: ${result.statusText}`);
+      }
+
+      // Create a download link and click it programmatically
+      const url = window.URL.createObjectURL(new Blob([result.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", ResumeFileName); // Set the download attribute with filename
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up and revoke the object URL
+      window.URL.revokeObjectURL(url);
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert(`Failed to download file: ${error.message}. Please try again.`);
+    }
+  };
 
   const toggleColumnVisibility = (column) => {
     setVisibleColumns((prev) =>
@@ -101,18 +130,13 @@ const UsersPage = () => {
     navigate("/success");
   };
 
-  const filteredData = Array.isArray(data)
-    ? data.filter((item) => {
-        return allColumns.some(
-          (column) =>
-            item[column] &&
-            item[column]
-              .toString()
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase())
-        );
-      })
-    : [];
+  const filteredData = data.filter((item) =>
+    allColumns.some(
+      (column) =>
+        item[column] &&
+        item[column].toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 
   return (
     <div className="flex">
@@ -175,8 +199,27 @@ const UsersPage = () => {
                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
               >
                 {visibleColumns.map((column) => (
-                  <td key={column} className="py-4 px-6">
-                    {item[column]}
+                  <td key={column} className="py-4 px-6 relative">
+                    {column === "ResumeFileName" ? (
+                      <div className="group">
+                        <a
+                          href="#/"
+                          onClick={() => downloadFile(item[column])}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          {item[column]}
+                        </a>
+                        <div className="hidden group-hover:block absolute z-20 w-48 p-2 bg-white border border-gray-300 shadow-lg">
+                          <img
+                            src={`path/to/preview/${item[column]}.jpg`}
+                            alt="Resume Preview"
+                            className="w-full h-auto"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      item[column]
+                    )}
                   </td>
                 ))}
               </tr>

@@ -11,6 +11,7 @@
     "amazon-cognito-identity-js": "^6.3.7",
     "aws-sdk": "^2.1545.0",
     "axios": "^1.6.7",
+    "js-file-download": "^0.4.12",
     "modules": "^0.4.0",
     "node": "^22.2.0",
     "react": "^18.2.0",

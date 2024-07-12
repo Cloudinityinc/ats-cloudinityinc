@@ -207,46 +207,6 @@ function FormPage() {
     return isValid;
   };
 
-  // const uploadResume = async (file) => {
-  //   // const filename = encodeURIComponent(file.name);
-  //   // // const uploadUrl = `${process.env.REACT_APP_API_URL}/${formData.ReqId}/${filename}`;
-  //   // const uploadUrl = `${process.env.REACT_APP_API_URL}/${filename}`;
-  //   const filename = `${formData.ReqId}_${formData.FullName}_${file.name}`;
-  //   const uploadUrl = `${process.env.REACT_APP_API_URL}/${filename}`;
-
-  //   const fileData = new FormData();
-  //   fileData.append("file", file, filename);
-
-  //   try {
-  //     const response = await fetch(uploadUrl, {
-  //       method: "POST",
-  //       body: fileData,
-  //       // body: JSON.stringify(data),
-  //     });
-  //     const data = await response.json();
-
-  //     console.log("Server response:", data);
-
-  //     if (!response.ok) {
-  //       throw new Error(`Server responded with status: ${response.status}`);
-  //     }
-
-  //     // Since the server confirms success but doesn't provide a URL, log the success and maybe return a success message instead
-  //     if (data.message === "File uploaded successfully") {
-  //       console.log(data.message);
-  //       // Return a static message or a mock URL, or adjust as needed
-  //       return "Upload successful, no URL provided"; // Placeholder return value
-  //     } else {
-  //       throw new Error(
-  //         "Unexpected server response, upload may not be successful."
-  //       );
-  //     }
-  //   } catch (error) {
-  //     console.error("Upload Error:", error);
-  //     throw error;
-  //   }
-  // };
-
   const uploadResume = async (file) => {
     const filename = `${formData.ReqId}_${formData.FullName}_${file.name}`;
     const uploadUrl = `${process.env.REACT_APP_API_URL}/${filename}`;
