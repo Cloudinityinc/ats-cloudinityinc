@@ -1,8 +1,17 @@
+//Working - Needs some editing
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { IoSearch } from "react-icons/io5";
+import { pdfjs } from "react-pdf";
 import axios from "axios";
+import PdfPreview from "../components/PdfPreview";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 const UsersPage = () => {
   const [data, setData] = useState([]);
@@ -20,8 +29,11 @@ const UsersPage = () => {
     "ImmigrationStatus",
     "ContractType",
   ]);
-
   const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [preSignedUrl, setPreSignedUrl] = useState(null);
+  const [currentHovered, setCurrentHovered] = useState(null);
+  const [minimized, setMinimized] = useState(false);
+
   const allColumns = [
     "ReqId",
     "FullName",
@@ -77,14 +89,41 @@ const UsersPage = () => {
     fetchData();
   }, []);
 
-  const downloadFile = async (ResumeFileName) => {
+  const fetchPreSignedUrl = async (ResumeFileName) => {
+    if (currentHovered === ResumeFileName) return; // Prevent multiple fetches for the same file
+    setCurrentHovered(ResumeFileName);
     try {
-      // Construct the URL with the base URL from the environment variable
+      if (!ResumeFileName.toLowerCase().endsWith(".pdf")) {
+        console.warn("File is not a PDF");
+        setPreSignedUrl(null);
+        return;
+      }
+
       const apiUrl = `${
         process.env.REACT_APP_RESUME_DOWNLOAD
       }?guide=${encodeURIComponent(ResumeFileName)}`;
 
-      // Fetch the presigned URL from your Lambda function
+      const response = await axios.get(apiUrl);
+      if (response.status !== 200) {
+        throw new Error(
+          `Failed to fetch presigned URL: ${response.statusText}`
+        );
+      }
+      const presignedUrl = response.data;
+      console.log("Fetched pre-signed URL:", presignedUrl); // Log the URL
+      setPreSignedUrl(presignedUrl);
+    } catch (error) {
+      console.error("Failed to fetch pre-signed URL:", error);
+      setPreSignedUrl(null); // Clear the URL on error
+    }
+  };
+
+  const downloadFile = async (ResumeFileName) => {
+    try {
+      const apiUrl = `${
+        process.env.REACT_APP_RESUME_DOWNLOAD
+      }?guide=${encodeURIComponent(ResumeFileName)}`;
+
       const response = await axios.get(apiUrl);
       if (response.status !== 200) {
         throw new Error(
@@ -93,23 +132,20 @@ const UsersPage = () => {
       }
       const presignedUrl = response.data;
 
-      // Using the presigned URL to initiate the download
       const result = await axios.get(presignedUrl, {
-        responseType: "blob", // This ensures that the response is handled as a file
+        responseType: "blob",
       });
       if (result.status !== 200) {
         throw new Error(`Failed to download file: ${result.statusText}`);
       }
 
-      // Create a download link and click it programmatically
       const url = window.URL.createObjectURL(new Blob([result.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", ResumeFileName); // Set the download attribute with filename
+      link.setAttribute("download", ResumeFileName);
       document.body.appendChild(link);
       link.click();
 
-      // Clean up and revoke the object URL
       window.URL.revokeObjectURL(url);
       link.parentNode.removeChild(link);
     } catch (error) {
@@ -137,6 +173,16 @@ const UsersPage = () => {
         item[column].toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  const handleMinimize = () => {
+    setMinimized(!minimized);
+  };
+
+  const handleClose = () => {
+    setPreSignedUrl(null);
+    setCurrentHovered(null);
+    setMinimized(false);
+  };
 
   return (
     <div className="flex">
@@ -201,7 +247,14 @@ const UsersPage = () => {
                 {visibleColumns.map((column) => (
                   <td key={column} className="py-4 px-6 relative">
                     {column === "ResumeFileName" ? (
-                      <div className="group">
+                      <div
+                        className="group relative"
+                        onMouseEnter={() => fetchPreSignedUrl(item[column])}
+                        onMouseLeave={() => {
+                          setPreSignedUrl(null);
+                          setCurrentHovered(null);
+                        }}
+                      >
                         <a
                           href="#/"
                           onClick={() => downloadFile(item[column])}
@@ -209,13 +262,13 @@ const UsersPage = () => {
                         >
                           {item[column]}
                         </a>
-                        <div className="hidden group-hover:block absolute z-20 w-48 p-2 bg-white border border-gray-300 shadow-lg">
-                          <img
-                            src={`path/to/preview/${item[column]}.jpg`}
-                            alt="Resume Preview"
-                            className="w-full h-auto"
+                        {preSignedUrl && currentHovered === item[column] && (
+                          <PdfPreview
+                            preSignedUrl={preSignedUrl}
+                            onClose={handleClose}
+                            onMinimize={handleMinimize}
                           />
-                        </div>
+                        )}
                       </div>
                     ) : (
                       item[column]

@@ -1,16 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import Header from "../components/Header.jsx";
-import Footer from "../components/Footer.jsx";
+// import Footer from "../components/Footer.jsx";
 import { useNavigate } from "react-router-dom";
 
 function FormPage() {
   const initialFormData = {
     FullName: "",
-    // RequiredID: "",
     ReqId: "",
     ReqTitle: "",
     Role: "",
-    ReqCreationDate: "",
+    // ReqCreationDate: "",
     VendorID: "",
     ImmigrationStatus: "",
     ContractType: "",
@@ -35,20 +34,17 @@ function FormPage() {
     ResumeFormattingNeeded: "",
     FormattedBy: "",
     Resume: null,
-    ResumeFileName: "", // Placeholder for the resume fileßƒ
+    ResumeFileName: "",
   };
+
   const [formData, setFormData] = useState(initialFormData);
   const [validationErrors, setValidationErrors] = useState({});
   const [showPopup, setShowPopup] = useState(false);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const resumeInputRef = useRef(null);
 
   const recruiterName = process.env.REACT_APP_RECRUITER_NAME.split(",");
   const [selectedRecruiterName, setSelectedRecruiterName] = useState("");
-
-  // const recruitingStatus = process.env.REACT_APP_RECRUITING_STATUS.split(",");
-  // const [selectRecruitingStatus, setSelectRecruitingStatus] = useState("");
 
   const immigrationStatus = process.env.REACT_APP_IMMIGRATION_STATUS.split(",");
   const [selectImmigrationStatus, setSelectImmigrationStatus] = useState("");
@@ -58,9 +54,6 @@ function FormPage() {
 
   const stateName = process.env.REACT_APP_STATE_NAME.split(",");
   const [selectStateName, setSelectStateName] = useState("");
-
-  // const questionnaire = process.env.REACT_APP_QUESTIONNAIRE.split(",");
-  // const [selectQuestionnaire, setSelectQuestionnaire] = useState("");
 
   const submissionStatus = process.env.REACT_APP_SUBMISSION_STATUS.split(",");
   const [selectSubmissionStatus, setSelectSubmissionStatus] = useState("");
@@ -108,9 +101,15 @@ function FormPage() {
     return /\S+@\S+\.\S+/.test(email);
   };
 
+  // const isValidPhoneNumber = (phoneNumber) => {
+  //   const pattern = /^\+?[1-9]\d{1,14}$/; // Basic international phone number pattern
+  //   return pattern.test(phoneNumber);
+  // };
+
   const isValidPhoneNumber = (phoneNumber) => {
     const pattern = /^\+?[1-9]\d{1,14}$/; // Basic international phone number pattern
-    return pattern.test(phoneNumber);
+    const digitsOnlyPattern = /^\d{10}$/; // Pattern for 10-digit phone number
+    return pattern.test(phoneNumber) && digitsOnlyPattern.test(phoneNumber);
   };
 
   const navigate = useNavigate();
@@ -143,6 +142,11 @@ function FormPage() {
           setValidationErrors(newErrors);
         }
       }
+    } else if (id === "ContactNumber") {
+      newFormData[id] = value.replace(/\D/g, ""); // Remove non-numeric characters
+      let newErrors = { ...validationErrors };
+      delete newErrors[id];
+      setValidationErrors(newErrors);
     } else {
       newFormData[id] = value;
       let newErrors = { ...validationErrors };
@@ -150,11 +154,10 @@ function FormPage() {
       setValidationErrors(newErrors);
     }
 
-    // Automatically update Bill Rate Margin when Bill Rate or Vendor Rate changes
-    if (id === "BillRate" || id === "VendorRate") {
+    if (id === "BillRate" || id === "CandidatePayRate") {
       const billRate = parseFloat(newFormData.BillRate) || 0;
-      const vendorRate = parseFloat(newFormData.VendorRate) || 0;
-      const billRateMargin = billRate - vendorRate;
+      const CandidatePayRate = parseFloat(newFormData.CandidatePayRate) || 0;
+      const billRateMargin = billRate - CandidatePayRate;
 
       // Update Bill Rate Margin in form data
       newFormData.BillRateMargin = billRateMargin.toString();
@@ -167,39 +170,54 @@ function FormPage() {
     let isValid = true;
     const newErrors = {};
 
-    // Iterate over formData to check for empty fields
-    Object.keys(formData).forEach((key) => {
-      // Exclude the 'Resume' field from this check since it's handled separately
-      if (key !== "Resume") {
-        const value = formData[key];
-        // Check if the field is either not set, an empty string, or (for dropdowns) the placeholder value
-        if (!value || value === "" || value === "Select an option") {
-          newErrors[key] = "This field is required.";
-          isValid = false;
-        }
-      }
-    });
+    if (!formData.FullName) {
+      newErrors.FullName = "This field is required.";
+      isValid = false;
+    }
+    // if (!formData.EmailId || !isValidEmail(formData.EmailId)) {
+    //   newErrors.EmailId = "Invalid email format.";
+    //   isValid = false;
+    // }
+    // if (
+    //   !formData.ContactNumber ||
+    //   !isValidPhoneNumber(formData.ContactNumber)
+    // ) {
+    //   newErrors.ContactNumber = "Invalid phone number format.";
+    //   isValid = false;
+    // }
 
-    // Additional validation for EmailId
-    if (formData.EmailId && !isValidEmail(formData.EmailId)) {
+    if (!formData.EmailId) {
+      newErrors.EmailId = "This field is required.";
+      isValid = false;
+    } else if (!isValidEmail(formData.EmailId)) {
       newErrors.EmailId = "Invalid email format.";
       isValid = false;
     }
 
-    if (formData.ContactNumber && !isValidPhoneNumber(formData.ContactNumber)) {
+    if (!formData.ContactNumber) {
+      newErrors.ContactNumber = "This field is required.";
+      isValid = false;
+    } else if (!isValidPhoneNumber(formData.ContactNumber)) {
       newErrors.ContactNumber = "Invalid phone number format.";
       isValid = false;
     }
+    if (!formData.CandidatePayRate) {
+      newErrors.CandidatePayRate = "This field is required.";
+      isValid = false;
+    }
+    if (!formData.ImmigrationStatus) {
+      newErrors.ImmigrationStatus = "This field is required.";
+      isValid = false;
+    }
 
-    // Check for resume upload
-    if (!formData.Resume) {
-      newErrors.Resume = "Please upload a resume.";
+    if (!formData.BillRate) {
+      newErrors.BillRate = "This field is required.";
       isValid = false;
     }
 
     if (formData.BillRateMargin < 0) {
       newErrors.BillRateMargin =
-        "Bill Rate Margin cannot be negative. Please check the Bill Rate and Vendor Rate.";
+        "Bill Rate Margin cannot be negative. Please check the Bill Rate and Candidate Pay Rate.";
       isValid = false;
     }
 
@@ -266,10 +284,10 @@ function FormPage() {
 
   const handleDropdownChange = (e) => {
     console.log(e.target.id);
-    const { id, value } = e.target; // `id` is "ImmigrationStatus", and `value` is the selected option's value
+    const { id, value } = e.target;
     setFormData((prevFormData) => ({
       ...prevFormData,
-      [id]: value, // Dynamically updates the correct key in formData based on the dropdown's id
+      [id]: value,
     }));
   };
 
@@ -281,13 +299,11 @@ function FormPage() {
     try {
       if (formData.Resume) {
         const resumeUrl = await uploadResume(formData.Resume);
-        // Update formData with the resume URL for submission
         const updatedFormData = { ...formData, ResumeUrl: resumeUrl };
         await submitForm(updatedFormData);
         setShowPopup(true); // Show success message
         setFormData(initialFormData); // Reset form
       } else {
-        // Handle the case where a resume is required but not uploaded
         throw new Error("Resume is required.");
       }
     } catch (error) {
@@ -301,11 +317,9 @@ function FormPage() {
     setShowPopup(false);
     setFormData(initialFormData);
     setSelectedRecruiterName("");
-    // setSelectRecruitingStatus("");
     setSelectImmigrationStatus("");
     setSelectContractType("");
     setSelectStateName("");
-    // setSelectQuestionnaire("");
     setSelectSubmissionStatus("");
     setSelectResumeFormattingNeeded("");
     setValidationErrors({});
@@ -313,6 +327,10 @@ function FormPage() {
       resumeInputRef.current.value = "";
     }
     navigate("/users");
+  };
+
+  const handleCancel = () => {
+    navigate("/Dashboard");
   };
 
   return (
@@ -336,7 +354,7 @@ function FormPage() {
                 type="String"
                 placeholder="Full Name"
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none focus:ring"
-                onChange={handleInputChange} // attach handleInputChange here
+                onChange={handleInputChange}
                 value={formData.FullName}
               />
               {validationErrors.FullName && (
@@ -354,7 +372,7 @@ function FormPage() {
                 type="number"
                 placeholder="ID"
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none focus:ring"
-                onChange={handleInputChange} // attach handleInputChange here
+                onChange={handleInputChange}
                 value={formData.ReqId}
               />
               {validationErrors.ReqId && (
@@ -375,7 +393,7 @@ function FormPage() {
                 type="String"
                 placeholder="Title"
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none focus:ring"
-                onChange={handleInputChange} // attach handleInputChange here
+                onChange={handleInputChange}
                 value={formData.ReqTitle}
               />
               {validationErrors.ReqTitle && (
@@ -393,8 +411,7 @@ function FormPage() {
                 type="String"
                 placeholder="Role"
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none focus:ring"
-                onChange={handleInputChange} // attach handleInputChange here
-                value={formData.Role}
+                onChange={handleInputChange}
               />
               {validationErrors.Role && (
                 <p className="text-red-500 text-xs italic">
@@ -402,8 +419,7 @@ function FormPage() {
                 </p>
               )}
             </div>
-            {/* </div> */}
-            <div>
+            {/* <div>
               <label
                 className="text-white dark:text-gray-200"
                 htmlFor="ReqCreationDate"
@@ -412,11 +428,10 @@ function FormPage() {
               </label>
               <input
                 id="ReqCreationDate"
-                // type="Number"
                 type="Date"
                 placeholder="MM/DD/YYYY"
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none focus:ring"
-                onChange={handleInputChange} // attach handleInputChange here
+                onChange={handleInputChange}
                 value={formData.ReqCreationDate}
               />
               {validationErrors.ReqCreationDate && (
@@ -424,7 +439,7 @@ function FormPage() {
                   {validationErrors.ReqCreationDate}
                 </p>
               )}
-            </div>
+            </div> */}
             <div>
               <label
                 className="text-white dark:text-gray-200"
@@ -437,7 +452,7 @@ function FormPage() {
                 type="String"
                 placeholder="Vendor ID"
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none focus:ring"
-                onChange={handleInputChange} // attach handleInputChange here
+                onChange={handleInputChange}
                 value={formData.VendorID}
               />
               {validationErrors.VendorID && (
@@ -680,7 +695,7 @@ function FormPage() {
                 type="number"
                 placeholder="Contact Number"
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none focus:ring"
-                onChange={handleInputChange} // attach handleInputChange here
+                onChange={handleInputChange}
                 value={formData.ContactNumber}
               />
               {validationErrors.ContactNumber && (
@@ -1213,13 +1228,36 @@ function FormPage() {
                 </p>
               )}
             </div>
-            <button
+            {/* <button
               type="submit"
               disabled={isSubmitting}
               className="col-span-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
               Submit
             </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Cancel
+            </button> */}
+            <div className="col-span-2 flex justify-between">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-1/2 mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                Submit
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="w-1/2 ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
       </section>
@@ -1238,7 +1276,7 @@ function FormPage() {
           </div>
         </div>
       )}
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

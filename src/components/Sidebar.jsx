@@ -35,7 +35,7 @@ function Sidebar() {
           className={`transition-all duration-300 ${open ? "h-8" : "h-6"}`}
           alt="Logo"
         />
-        {/* Conditionally render the "Dashboard" text based on `open` state */}
+
         {open && <span className="text-white ml-4 text-lg">Dashboard</span>}
       </div>
       <ul className="pt-2 w-full">

@@ -14,9 +14,12 @@
     "js-file-download": "^0.4.12",
     "modules": "^0.4.0",
     "node": "^22.2.0",
+    "pdfjs-dist": "^4.4.168",
     "react": "^18.2.0",
+    "react-doc-viewer": "^0.1.13",
     "react-dom": "^18.2.0",
     "react-icons": "^5.0.1",
+    "react-pdf": "^9.1.0",
     "react-router-dom": "^6.21.3",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
