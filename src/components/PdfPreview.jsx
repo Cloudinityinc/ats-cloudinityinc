@@ -54,7 +54,7 @@ import { Document, Page, pdfjs } from "react-pdf";
 import { IoClose, IoRemove } from "react-icons/io5";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 function PdfPreview({ preSignedUrl, onClose, onMinimize }) {
   const [numPages, setNumPages] = useState(null);
